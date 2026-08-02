@@ -5,195 +5,197 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>A股操盘看板</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             color: #fff;
             min-height: 100vh;
-            padding: 20px;
+            padding: 16px;
         }
         .header {
             text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
+            margin-bottom: 20px;
+            padding: 15px;
             background: rgba(255,255,255,0.05);
             border-radius: 15px;
             backdrop-filter: blur(10px);
         }
         .header h1 {
-            font-size: 2.2em;
+            font-size: 2em;
             background: linear-gradient(90deg, #00d4ff, #7b2ff7);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
-        .header .time {
-            font-size: 1.1em;
-            color: #aaa;
-        }
+        .header .time { font-size: 1em; color: #aaa; }
+        .header .status { font-size: 0.8em; color: #666; margin-top: 4px; }
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
         }
         .card {
             background: rgba(255,255,255,0.08);
             border-radius: 15px;
-            padding: 20px;
+            padding: 16px;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
         }
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 40px rgba(0,212,255,0.2);
-        }
+        .card-full { grid-column: 1 / -1; }
         .card-title {
-            font-size: 1.3em;
-            margin-bottom: 15px;
+            font-size: 1.2em;
+            margin-bottom: 12px;
             color: #00d4ff;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
         .card-title::before {
             content: '';
             width: 4px;
-            height: 20px;
+            height: 18px;
             background: linear-gradient(180deg, #00d4ff, #7b2ff7);
             border-radius: 2px;
         }
+        .card-title .badge {
+            font-size: 0.65em;
+            background: rgba(0,212,255,0.15);
+            padding: 2px 8px;
+            border-radius: 10px;
+            color: #00d4ff;
+            margin-left: auto;
+        }
+
+        /* 持仓 */
         .stock-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px;
-            margin-bottom: 10px;
+            padding: 12px;
+            margin-bottom: 8px;
             background: rgba(0,0,0,0.2);
             border-radius: 10px;
-            transition: background 0.3s;
         }
-        .stock-item:hover {
-            background: rgba(0,0,0,0.3);
-        }
-        .stock-name {
-            font-size: 1.1em;
-            font-weight: 600;
-        }
-        .stock-code {
-            font-size: 0.85em;
-            color: #888;
-            margin-top: 3px;
-        }
-        .stock-price {
-            font-size: 1.4em;
-            font-weight: bold;
-        }
-        .stock-change {
-            font-size: 0.9em;
-            margin-top: 3px;
-        }
+        .stock-name { font-size: 1.05em; font-weight: 600; }
+        .stock-code { font-size: 0.8em; color: #888; margin-top: 2px; }
+        .stock-price { font-size: 1.3em; font-weight: bold; }
+        .stock-change { font-size: 0.85em; margin-top: 2px; }
+        .stock-detail { font-size: 0.75em; color: #888; margin-top: 2px; }
+
+        /* 指数 */
+        .market-index { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .index-item { text-align: center; padding: 12px 8px; background: rgba(0,0,0,0.2); border-radius: 10px; }
+        .index-name { font-size: 0.85em; color: #aaa; margin-bottom: 6px; }
+        .index-value { font-size: 1.2em; font-weight: bold; }
+        .index-change { font-size: 0.8em; margin-top: 4px; }
+        .index-vol { font-size: 0.7em; color: #888; margin-top: 3px; }
+
         .up { color: #ff4757; }
         .down { color: #2ed573; }
         .flat { color: #ffa502; }
-        .market-index {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-        }
-        .index-item {
-            text-align: center;
-            padding: 15px 10px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 10px;
-        }
-        .index-name {
-            font-size: 0.9em;
-            color: #aaa;
-            margin-bottom: 8px;
-        }
-        .index-value {
-            font-size: 1.3em;
-            font-weight: bold;
-        }
-        .index-change {
-            font-size: 0.85em;
-            margin-top: 5px;
-        }
-        .etf-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+
+        /* ETF表格 */
+        .etf-table { width: 100%; border-collapse: collapse; }
         .etf-table th {
-            text-align: left;
-            padding: 12px 10px;
-            background: rgba(0,0,0,0.3);
-            font-weight: 500;
-            color: #00d4ff;
-            font-size: 0.9em;
+            text-align: left; padding: 10px 8px;
+            background: rgba(0,0,0,0.3); font-weight: 500;
+            color: #00d4ff; font-size: 0.85em;
         }
         .etf-table td {
-            padding: 12px 10px;
+            padding: 10px 8px;
             border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.9em;
         }
-        .etf-table tr:hover td {
-            background: rgba(255,255,255,0.03);
-        }
-        .sector-list {
+        .etf-table tr:hover td { background: rgba(255,255,255,0.03); }
+
+        /* 板块列表 */
+        .sector-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
         }
         .sector-item {
             display: flex;
             justify-content: space-between;
-            padding: 12px;
+            align-items: center;
+            padding: 10px 12px;
             background: rgba(0,0,0,0.2);
             border-radius: 8px;
+            font-size: 0.88em;
         }
-        .sector-name {
-            font-size: 0.95em;
-        }
-        .sector-change {
+        .sector-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; }
+        .sector-change { font-weight: bold; white-space: nowrap; }
+        .sector-rank {
+            display: inline-block;
+            width: 18px; height: 18px;
+            line-height: 18px;
+            text-align: center;
+            border-radius: 4px;
+            font-size: 0.7em;
             font-weight: bold;
+            margin-right: 6px;
         }
-        .loading {
+        .rank-1 { background: #ff4757; color: #fff; }
+        .rank-2 { background: #ff6b81; color: #fff; }
+        .rank-3 { background: #ff7979; color: #fff; }
+        .rank-other { background: rgba(255,255,255,0.1); color: #aaa; }
+
+        /* 板块统计 */
+        .sector-stats {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            flex: 1;
+            min-width: 120px;
             text-align: center;
-            padding: 40px;
-            color: #888;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
         }
-        .loading::after {
-            content: '...';
-            animation: dots 1.5s infinite;
+        .stat-label { font-size: 0.8em; color: #888; margin-bottom: 4px; }
+        .stat-value { font-size: 1.3em; font-weight: bold; }
+
+        /* 涨跌条 */
+        .bar-container {
+            display: flex;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+            background: rgba(0,0,0,0.3);
         }
-        @keyframes dots {
-            0%, 20% { content: '.'; }
-            40% { content: '..'; }
-            60%, 100% { content: '...'; }
+        .bar-up { background: #ff4757; }
+        .bar-down { background: #2ed573; }
+        .bar-flat { background: #ffa502; }
+
+        /* 子标题 */
+        .sub-title {
+            font-size: 0.9em;
+            color: #aaa;
+            margin: 12px 0 8px 0;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
-        .refresh-info {
-            text-align: center;
-            margin-top: 20px;
-            color: #666;
-            font-size: 0.85em;
-        }
+
+        .loading { text-align: center; padding: 30px; color: #888; }
+        .loading::after { content: '...'; animation: dots 1.5s infinite; }
+        @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60%, 100% { content: '...'; } }
+        .refresh-info { text-align: center; margin-top: 16px; color: #555; font-size: 0.8em; }
+
         @media (max-width: 768px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
-            .market-index {
-                grid-template-columns: 1fr;
-            }
-            .sector-list {
-                grid-template-columns: 1fr;
-            }
+            .container { grid-template-columns: 1fr; }
+            .market-index { grid-template-columns: 1fr; }
+            .sector-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .sector-grid { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -201,269 +203,442 @@
     <div class="header">
         <h1>📈 A股操盘看板</h1>
         <div class="time" id="currentTime"></div>
+        <div class="status" id="dataStatus">数据加载中...</div>
     </div>
 
     <div class="container">
         <!-- 持仓股票 -->
         <div class="card">
-            <div class="card-title">持仓股票</div>
+            <div class="card-title">持仓股票 <span class="badge">实时</span></div>
             <div id="holdings" class="loading">加载中</div>
         </div>
 
         <!-- 市场指数 -->
         <div class="card">
-            <div class="card-title">市场指数</div>
+            <div class="card-title">市场指数 <span class="badge">实时</span></div>
             <div id="marketIndex" class="market-index loading">加载中</div>
         </div>
 
-        <!-- ETF申赎 -->
-        <div class="card" style="grid-column: 1 / -1;">
-            <div class="card-title">ETF申赎情况</div>
-            <div id="etfData" class="loading">加载中</div>
+        <!-- 板块统计概览 -->
+        <div class="card card-full">
+            <div class="card-title">板块统计概览 <span class="badge">东方财富</span></div>
+            <div id="sectorStats" class="loading">加载中</div>
         </div>
 
-        <!-- 板块行情 -->
-        <div class="card" style="grid-column: 1 / -1;">
-            <div class="card-title">热门板块</div>
-            <div id="sectors" class="loading">加载中</div>
+        <!-- 概念板块涨幅榜 -->
+        <div class="card">
+            <div class="card-title">🔥 概念板块涨幅榜 <span class="badge">TOP15</span></div>
+            <div id="conceptUp" class="loading">加载中</div>
+        </div>
+
+        <!-- 概念板块跌幅榜 -->
+        <div class="card">
+            <div class="card-title">💚 概念板块跌幅榜 <span class="badge">TOP10</span></div>
+            <div id="conceptDown" class="loading">加载中</div>
+        </div>
+
+        <!-- 行业板块涨幅榜 -->
+        <div class="card">
+            <div class="card-title">🏭 行业板块涨幅榜 <span class="badge">TOP15</span></div>
+            <div id="industryUp" class="loading">加载中</div>
+        </div>
+
+        <!-- 行业板块跌幅榜 -->
+        <div class="card">
+            <div class="card-title">💚 行业板块跌幅榜 <span class="badge">TOP10</span></div>
+            <div id="industryDown" class="loading">加载中</div>
+        </div>
+
+        <!-- ETF实时行情 -->
+        <div class="card card-full">
+            <div class="card-title">📊 ETF实时行情 <span class="badge">腾讯财经</span></div>
+            <div id="etfData" class="loading">加载中</div>
         </div>
     </div>
 
     <div class="refresh-info">
-        数据每5秒自动刷新 | 数据来源：腾讯财经
+        行情数据每10秒自动刷新 · 板块数据每60秒刷新 · 数据来源：腾讯财经 / 东方财富
     </div>
 
     <script>
-        // 持仓股票列表
+        // ============ 配置 ============
         const HOLDINGS = [
             { code: 'sz000063', name: '中兴通讯' },
             { code: 'sz002137', name: '实益达' }
         ];
 
-        // 市场指数
         const INDICES = [
             { code: 'sh000001', name: '上证指数' },
             { code: 'sz399001', name: '深证成指' },
             { code: 'sz399006', name: '创业板指' }
         ];
 
-        // 更新时间显示
+        // 重点监控ETF
+        const ETF_LIST = [
+            { code: 'sh588170', name: '科创半导体ETF华夏' },
+            { code: 'sh510500', name: '中证500ETF南方' },
+            { code: 'sh563360', name: 'A500ETF华泰柏瑞' },
+            { code: 'sh512980', name: '传媒ETF广发' },
+            { code: 'sh512480', name: '半导体ETF' },
+            { code: 'sh515030', name: '新能源车ETF' },
+            { code: 'sh512800', name: '银行ETF' },
+            { code: 'sh512660', name: '军工ETF' },
+            { code: 'sh512010', name: '医药ETF' },
+            { code: 'sh515790', name: '光伏ETF' }
+        ];
+
+        let lastSectorUpdate = 0;
+        const SECTOR_REFRESH_INTERVAL = 60000; // 60秒刷新板块
+
+        // ============ 工具函数 ============
         function updateTime() {
             const now = new Date();
-            const timeStr = now.toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            });
-            document.getElementById('currentTime').textContent = timeStr;
+            document.getElementById('currentTime').textContent =
+                now.toLocaleString('zh-CN', {
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+                });
         }
 
-        // 腾讯财经JSONP请求
-        function fetchStockData(codes) {
+        function setStatus(msg) {
+            document.getElementById('dataStatus').textContent = msg;
+        }
+
+        function changeClass(val) {
+            return val > 0 ? 'up' : val < 0 ? 'down' : 'flat';
+        }
+        function signStr(val) {
+            return val > 0 ? '+' : '';
+        }
+
+        // ============ 腾讯财经 JSONP ============
+        function fetchQQ(codes) {
             return new Promise((resolve) => {
-                const callbackName = 'qqstock_' + Date.now();
+                const cbName = 'qq_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
                 const script = document.createElement('script');
+                // 腾讯接口返回全局变量，不是标准 JSONP，需要轮询检测
+                // 直接用 script 加载后读取 window 变量
                 const codeStr = codes.join(',');
-                
-                window[callbackName] = function(data) {
-                    resolve(data);
-                    delete window[callbackName];
+                script.src = `https://qt.gtimg.cn/q=${codeStr}`;
+                script.onload = () => {
+                    // 腾讯的接口会把数据写入 v_* 全局变量
+                    const results = {};
+                    codes.forEach(c => {
+                        const varName = 'v_' + c;
+                        if (window[varName]) {
+                            results[c] = window[varName];
+                        }
+                    });
+                    resolve(results);
                     document.body.removeChild(script);
                 };
-
-                // 使用腾讯股票接口
-                script.src = `https://qt.gtimg.cn/q=${codeStr}&_callback=${callbackName}`;
                 script.onerror = () => {
-                    resolve(null);
-                    delete window[callbackName];
-                    document.body.removeChild(script);
+                    resolve({});
+                    try { document.body.removeChild(script); } catch(e) {}
                 };
                 document.body.appendChild(script);
             });
         }
 
-        // 解析腾讯股票数据
-        function parseStockData(data, code) {
+        function parseQQ(data, code) {
             if (!data) return null;
             try {
-                const parts = data.split('~');
+                // v_sz000063="1~中兴通讯~000063~..."
+                const raw = data;
+                // 去掉变量赋值部分，只取引号内的内容
+                const match = raw.match(/"([^"]+)"/);
+                if (!match) return null;
+                const parts = match[1].split('~');
                 if (parts.length < 50) return null;
                 return {
                     name: parts[1],
-                    code: code,
+                    code: parts[2],
                     price: parseFloat(parts[3]),
                     yesterday: parseFloat(parts[4]),
                     open: parseFloat(parts[5]),
-                    volume: parseFloat(parts[6]),
+                    volume: parseFloat(parts[6]), // 手
+                    buy: parseFloat(parts[7]),
+                    sell: parseFloat(parts[8]),
+                    high: parseFloat(parts[33]) || parseFloat(parts[3]),
+                    low: parseFloat(parts[34]) || parseFloat(parts[3]),
                     change: parseFloat(parts[31]),
                     changePct: parseFloat(parts[32]),
-                    high: parseFloat(parts[33]),
-                    low: parseFloat(parts[34])
+                    amount: parseFloat(parts[37]), // 万元
+                    turnover: parts[38] ? parseFloat(parts[38]) : 0,
+                    pe: parts[39] ? parseFloat(parts[39]) : 0,
+                    time: parts[30]
                 };
-            } catch (e) {
+            } catch(e) {
                 return null;
             }
         }
 
-        // 渲染持仓股票
-        function renderHoldings(data) {
-            const container = document.getElementById('holdings');
+        // ============ 东方财富 JSONP ============
+        function fetchEastMoney(params) {
+            return new Promise((resolve) => {
+                const cbName = 'em_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+                const script = document.createElement('script');
+                const baseUrl = 'https://push2.eastmoney.com/api/qt/clist/get';
+                const qs = new URLSearchParams({
+                    cb: cbName,
+                    pn: '1', pz: '50', po: '1', np: '1',
+                    fltt: '2', invt: '2', fid: 'f3',
+                    fields: 'f2,f3,f4,f12,f14,f104,f105,f128,f136',
+                    ...params
+                });
+
+                window[cbName] = function(data) {
+                    resolve(data);
+                    delete window[cbName];
+                    try { document.body.removeChild(script); } catch(e) {}
+                };
+
+                script.src = baseUrl + '?' + qs.toString();
+                script.onerror = () => {
+                    resolve(null);
+                    delete window[cbName];
+                    try { document.body.removeChild(script); } catch(e) {}
+                };
+                document.body.appendChild(script);
+            });
+        }
+
+        // ============ 渲染：持仓 ============
+        function renderHoldings(results) {
+            const el = document.getElementById('holdings');
             let html = '';
-            
-            HOLDINGS.forEach((stock, idx) => {
-                const d = data[idx];
-                if (!d) return;
-                
-                const changeClass = d.changePct > 0 ? 'up' : d.changePct < 0 ? 'down' : 'flat';
-                const changeSign = d.changePct > 0 ? '+' : '';
-                
+            HOLDINGS.forEach(h => {
+                const d = parseQQ(results[h.code], h.code);
+                if (!d) { html += `<div class="stock-item"><div class="stock-name">${h.name}</div><div style="color:#888">--</div></div>`; return; }
+                const cc = changeClass(d.changePct);
                 html += `
                     <div class="stock-item">
                         <div>
                             <div class="stock-name">${d.name}</div>
-                            <div class="stock-code">${stock.code}</div>
+                            <div class="stock-code">${d.code}</div>
+                            <div class="stock-detail">开:${d.open.toFixed(2)} 高:${d.high.toFixed(2)} 低:${d.low.toFixed(2)}</div>
                         </div>
-                        <div style="text-align: right;">
-                            <div class="stock-price ${changeClass}">${d.price.toFixed(2)}</div>
-                            <div class="stock-change ${changeClass}">${changeSign}${d.changePct.toFixed(2)}%</div>
+                        <div style="text-align:right">
+                            <div class="stock-price ${cc}">${d.price.toFixed(2)}</div>
+                            <div class="stock-change ${cc}">${signStr(d.changePct)}${d.changePct.toFixed(2)}% (${signStr(d.change)}${d.change.toFixed(2)})</div>
+                            <div class="stock-detail">成交额:${(d.amount/10000).toFixed(2)}亿 换手:${d.turnover}%</div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             });
-            
-            container.innerHTML = html || '<div class="loading">暂无数据</div>';
+            el.innerHTML = html || '<div style="color:#888;text-align:center;padding:20px">暂无数据</div>';
         }
 
-        // 渲染市场指数
-        function renderIndices(data) {
-            const container = document.getElementById('marketIndex');
+        // ============ 渲染：指数 ============
+        function renderIndices(results) {
+            const el = document.getElementById('marketIndex');
             let html = '';
-            
-            INDICES.forEach((idx, i) => {
-                const d = data[i];
-                if (!d) return;
-                
-                const changeClass = d.changePct > 0 ? 'up' : d.changePct < 0 ? 'down' : 'flat';
-                const changeSign = d.changePct > 0 ? '+' : '';
-                
+            INDICES.forEach(idx => {
+                const d = parseQQ(results[idx.code], idx.code);
+                if (!d) { html += `<div class="index-item"><div class="index-name">${idx.name}</div><div style="color:#888">--</div></div>`; return; }
+                const cc = changeClass(d.changePct);
                 html += `
                     <div class="index-item">
                         <div class="index-name">${d.name}</div>
-                        <div class="index-value ${changeClass}">${d.price.toFixed(2)}</div>
-                        <div class="index-change ${changeClass}">${changeSign}${d.changePct.toFixed(2)}%</div>
-                    </div>
-                `;
+                        <div class="index-value ${cc}">${d.price.toFixed(2)}</div>
+                        <div class="index-change ${cc}">${signStr(d.changePct)}${d.changePct.toFixed(2)}%</div>
+                        <div class="index-vol">成交额 ${(d.amount/10000).toFixed(0)}亿</div>
+                    </div>`;
             });
-            
-            container.innerHTML = html || '<div class="loading">暂无数据</div>';
+            el.innerHTML = html || '<div style="color:#888">暂无数据</div>';
         }
 
-        // 渲染ETF数据（模拟数据，实际应从API获取）
-        function renderETF() {
-            const container = document.getElementById('etfData');
-            // 示例数据，实际应从云手机抓取的数据文件获取
-            const etfData = [
-                { name: '科创半导体ETF华夏', code: '588170', amount: '19.00亿', shares: '20.70亿', change: '+2.45%' },
-                { name: '中证500ETF南方', code: '510500', amount: '15.01亿', shares: '2.00亿', change: '+2.24%' },
-                { name: 'A500ETF华泰柏瑞', code: '563360', amount: '9.71亿', shares: '7.65亿', change: '+1.44%' },
-                { name: '传媒ETF广发', code: '512980', amount: '4.84亿', shares: '5.74亿', change: '+6.92%' }
-            ];
-            
-            let html = `
-                <table class="etf-table">
-                    <thead>
-                        <tr>
-                            <th>基金名称</th>
-                            <th>增减金额</th>
-                            <th>增减份额</th>
-                            <th>涨幅</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            etfData.forEach(etf => {
-                const changeClass = etf.change.startsWith('+') ? 'up' : etf.change.startsWith('-') ? 'down' : 'flat';
-                html += `
+        // ============ 渲染：ETF ============
+        function renderETF(results) {
+            const el = document.getElementById('etfData');
+            let rows = '';
+            ETF_LIST.forEach(etf => {
+                const d = parseQQ(results[etf.code], etf.code);
+                if (!d) return;
+                const cc = changeClass(d.changePct);
+                rows += `
                     <tr>
-                        <td>${etf.name}<br><small style="color:#888">${etf.code}</small></td>
-                        <td style="color:#00d4ff">${etf.amount}</td>
-                        <td style="color:#00d4ff">${etf.shares}</td>
-                        <td class="${changeClass}">${etf.change}</td>
-                    </tr>
-                `;
+                        <td>${d.name}<br><small style="color:#888">${d.code}</small></td>
+                        <td class="${cc}" style="font-weight:bold">${d.price.toFixed(3)}</td>
+                        <td class="${cc}">${signStr(d.changePct)}${d.changePct.toFixed(2)}%</td>
+                        <td>${(d.amount/10000).toFixed(2)}亿</td>
+                        <td style="color:#888">${d.time ? d.time.substring(0,5) : '--'}</td>
+                    </tr>`;
             });
-            
-            html += '</tbody></table>';
-            container.innerHTML = html;
+            el.innerHTML = rows ? `
+                <table class="etf-table">
+                    <thead><tr>
+                        <th>基金名称</th><th>最新价</th><th>涨跌幅</th><th>成交额</th><th>时间</th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>` : '<div style="color:#888;text-align:center;padding:20px">暂无数据</div>';
         }
 
-        // 渲染板块数据（模拟数据）
-        function renderSectors() {
-            const container = document.getElementById('sectors');
-            const sectors = [
-                { name: 'AI视频', change: '+8.10%' },
-                { name: 'AI应用', change: '+5.11%' },
-                { name: '人工智能', change: '+3.85%' },
-                { name: '半导体', change: '+2.96%' },
-                { name: '消费电子', change: '+2.15%' },
-                { name: '机器人', change: '+1.88%' }
-            ];
-            
-            let html = '<div class="sector-list">';
-            sectors.forEach(sector => {
-                const changeClass = sector.change.startsWith('+') ? 'up' : 'down';
+        // ============ 渲染：板块 ============
+        function renderSectorList(containerId, items, showRank) {
+            const el = document.getElementById(containerId);
+            if (!items || items.length === 0) {
+                el.innerHTML = '<div style="color:#888;text-align:center;padding:20px">暂无数据</div>';
+                return;
+            }
+            let html = '<div class="sector-grid">';
+            items.forEach((item, i) => {
+                const cc = changeClass(item.changePct);
+                const rankHtml = showRank ?
+                    `<span class="sector-rank ${i < 3 ? 'rank-' + (i+1) : 'rank-other'}">${i+1}</span>` : '';
                 html += `
                     <div class="sector-item">
-                        <span class="sector-name">${sector.name}</span>
-                        <span class="sector-change ${changeClass}">${sector.change}</span>
-                    </div>
-                `;
+                        <span class="sector-name">${rankHtml}${item.name}</span>
+                        <span class="sector-change ${cc}">${signStr(item.changePct)}${item.changePct.toFixed(2)}%</span>
+                    </div>`;
             });
             html += '</div>';
-            container.innerHTML = html;
+            el.innerHTML = html;
         }
 
-        // 主数据加载函数
+        function renderSectorStats(stats) {
+            const el = document.getElementById('sectorStats');
+            if (!stats) {
+                el.innerHTML = '<div style="color:#888;text-align:center;padding:20px">暂无数据</div>';
+                return;
+            }
+            const total = stats.up + stats.down + stats.flat;
+            const upPct = total > 0 ? (stats.up / total * 100).toFixed(1) : 0;
+            const downPct = total > 0 ? (stats.down / total * 100).toFixed(1) : 0;
+
+            el.innerHTML = `
+                <div class="sector-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">上涨板块</div>
+                        <div class="stat-value up">${stats.up}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">下跌板块</div>
+                        <div class="stat-value down">${stats.down}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">平盘板块</div>
+                        <div class="stat-value flat">${stats.flat}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">总板块数</div>
+                        <div class="stat-value">${total}</div>
+                    </div>
+                </div>
+                <div class="bar-container">
+                    <div class="bar-up" style="width:${upPct}%"></div>
+                    <div class="bar-flat" style="width:${downPct > 0 ? 0 : 100 - upPct}%"></div>
+                    <div class="bar-down" style="width:${downPct}%"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:0.75em;color:#888">
+                    <span class="up">▲ ${upPct}%</span>
+                    <span class="down">▼ ${downPct}%</span>
+                </div>
+            `;
+        }
+
+        // ============ 数据获取 ============
+        async function loadStockData() {
+            const allCodes = [
+                ...HOLDINGS.map(h => h.code),
+                ...INDICES.map(i => i.code),
+                ...ETF_LIST.map(e => e.code)
+            ];
+            const results = await fetchQQ(allCodes);
+            renderHoldings(results);
+            renderIndices(results);
+            renderETF(results);
+        }
+
+        async function loadSectorData() {
+            const now = Date.now();
+            if (now - lastSectorUpdate < SECTOR_REFRESH_INTERVAL) return;
+            lastSectorUpdate = now;
+
+            // 并行请求：概念板块 + 行业板块
+            const [conceptData, industryData] = await Promise.all([
+                fetchEastMoney({ fs: 'm:90+t:3', pz: '50' }),   // 概念板块
+                fetchEastMoney({ fs: 'm:90+t:2', pz: '50' })    // 行业板块
+            ]);
+
+            // 解析概念板块
+            let conceptList = [];
+            if (conceptData && conceptData.data && conceptData.data.diff) {
+                conceptList = conceptData.data.diff.map(item => ({
+                    name: item.f14,
+                    code: item.f12,
+                    changePct: parseFloat(item.f3),
+                    changeAmt: parseFloat(item.f4),
+                    price: parseFloat(item.f2),
+                    upCount: item.f104 || 0,
+                    downCount: item.f105 || 0
+                }));
+            }
+
+            // 解析行业板块
+            let industryList = [];
+            if (industryData && industryData.data && industryData.data.diff) {
+                industryList = industryData.data.diff.map(item => ({
+                    name: item.f14,
+                    code: item.f12,
+                    changePct: parseFloat(item.f3),
+                    changeAmt: parseFloat(item.f4),
+                    price: parseFloat(item.f2),
+                    upCount: item.f104 || 0,
+                    downCount: item.f105 || 0
+                }));
+            }
+
+            // 概念涨幅榜 TOP15
+            const conceptUpTop = conceptList.slice(0, 15);
+            renderSectorList('conceptUp', conceptUpTop, true);
+
+            // 概念跌幅榜（取最后10个，反转使跌幅最大的在前）
+            const conceptDownTop = conceptList.slice(-10).reverse();
+            renderSectorList('conceptDown', conceptDownTop, true);
+
+            // 行业涨幅榜 TOP15
+            const industryUpTop = industryList.slice(0, 15);
+            renderSectorList('industryUp', industryUpTop, true);
+
+            // 行业跌幅榜（取最后10个，反转）
+            const industryDownTop = industryList.slice(-10).reverse();
+            renderSectorList('industryDown', industryDownTop, true);
+
+            // 板块统计
+            const allSectors = [...conceptList, ...industryList];
+            const stats = {
+                up: allSectors.filter(s => s.changePct > 0).length,
+                down: allSectors.filter(s => s.changePct < 0).length,
+                flat: allSectors.filter(s => s.changePct === 0).length
+            };
+            renderSectorStats(stats);
+
+            setStatus(`数据已更新 · 板块${conceptList.length + industryList.length}个 · ${new Date().toLocaleTimeString('zh-CN')}`);
+        }
+
+        // ============ 主循环 ============
         async function loadData() {
             updateTime();
-            
             try {
-                // 获取持仓股票数据
-                const holdingCodes = HOLDINGS.map(h => h.code);
-                const stockData = await fetchStockData(holdingCodes);
-                
-                // 获取指数数据
-                const indexCodes = INDICES.map(i => i.code);
-                const indexData = await fetchStockData(indexCodes);
-                
-                if (stockData) {
-                    const parsedStocks = HOLDINGS.map((h, i) => parseStockData(stockData, h.code));
-                    renderHoldings(parsedStocks);
-                }
-                
-                if (indexData) {
-                    const parsedIndices = INDICES.map((i, idx) => parseStockData(indexData, i.code));
-                    renderIndices(parsedIndices);
-                }
-                
-                renderETF();
-                renderSectors();
-                
-            } catch (error) {
-                console.error('数据加载错误:', error);
+                await loadStockData();
+                await loadSectorData();
+            } catch(e) {
+                console.error('加载失败:', e);
             }
         }
 
-        // 初始加载
+        // 启动
         loadData();
-        
-        // 每5秒刷新
-        setInterval(loadData, 5000);
+        // 行情 10秒刷新
+        setInterval(() => {
+            updateTime();
+            loadStockData();
+        }, 10000);
+        // 板块 60秒刷新（在 loadSectorData 内有节流）
+        setInterval(() => {
+            loadSectorData();
+        }, 15000);
+        // 时钟 1秒
         setInterval(updateTime, 1000);
     </script>
 </body>
