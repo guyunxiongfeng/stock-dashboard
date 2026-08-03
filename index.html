@@ -184,6 +184,32 @@
             border-bottom: 1px solid rgba(255,255,255,0.05);
         }
 
+        /* 复盘表格 */
+        .review-table { width: 100%; border-collapse: collapse; font-size: 0.88em; }
+        .review-table th {
+            text-align: left; padding: 8px; background: rgba(0,0,0,0.3);
+            color: #00d4ff; font-weight: 500; font-size: 0.85em;
+        }
+        .review-table td {
+            padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .review-table tr:hover td { background: rgba(255,255,255,0.03); }
+        .review-table .reason-tag {
+            display: inline-block; padding: 1px 6px; border-radius: 4px;
+            font-size: 0.78em; background: rgba(255,165,0,0.15); color: #ffa502;
+        }
+        .zt-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+        }
+        .zt-item {
+            padding: 10px; background: rgba(239,68,68,0.08); border-radius: 8px;
+            border: 1px solid rgba(239,68,68,0.15); text-align: center;
+        }
+        .zt-item .zt-name { font-weight: bold; font-size: 0.9em; }
+        .zt-item .zt-code { font-size: 0.75em; color: #888; }
+        .zt-item .zt-detail { font-size: 0.78em; color: #aaa; margin-top: 4px; }
+        .zt-item .zt-time { color: #ef4444; font-weight: bold; }
+
         .loading { text-align: center; padding: 30px; color: #888; }
         .loading::after { content: '...'; animation: dots 1.5s infinite; }
         @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60%, 100% { content: '...'; } }
@@ -254,10 +280,22 @@
             <div class="card-title">📊 ETF实时行情 <span class="badge">腾讯财经</span></div>
             <div id="etfData" class="loading">加载中</div>
         </div>
+
+        <!-- 复盘信息：龙虎榜 -->
+        <div class="card">
+            <div class="card-title">🔥 龙虎榜 <span class="badge">东方财富</span></div>
+            <div id="lhbData" class="loading">加载中</div>
+        </div>
+
+        <!-- 复盘信息：涨停池 -->
+        <div class="card">
+            <div class="card-title">🚀 涨停池 <span class="badge">东方财富</span></div>
+            <div id="ztData" class="loading">加载中</div>
+        </div>
     </div>
 
     <div class="refresh-info">
-        行情数据每10秒自动刷新 · 板块数据每60秒刷新 · 数据来源：腾讯财经 / 东方财富
+        行情每10秒刷新 · 板块每60秒刷新 · 复盘数据每5分钟刷新 · 数据来源：腾讯财经 / 东方财富
     </div>
 
     <script>
@@ -616,12 +654,145 @@
             setStatus(`数据已更新 · 板块${conceptList.length + industryList.length}个 · ${new Date().toLocaleTimeString('zh-CN')}`);
         }
 
+        // ============ 复盘数据获取 ============
+        function getTodayStr() {
+            const d = new Date();
+            return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        }
+        function getTodayCompact() {
+            const d = new Date();
+            return d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+        }
+
+        // 龙虎榜 - 东方财富数据中心
+        function fetchLHB() {
+            return new Promise((resolve) => {
+                const cbName = 'lhb_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+                const script = document.createElement('script');
+                const today = getTodayStr();
+                const url = `https://datacenter-web.eastmoney.com/api/data/v1/get?callback=${cbName}&sortColumns=NET_BUY_AMT&sortTypes=-1&pageSize=15&pageNumber=1&reportName=RPT_DAILYBILLBOARD_DETAILSNEW&columns=SECURITY_CODE,SECURITY_NAME_ABBR,CHANGE_RATE,NET_BUY_AMT,EXPLAIN,BILLBOARD_NET_AMT,BILLBOARD_BUY_AMT,BILLBOARD_SELL_AMT,BILLBOARD_DEAL_AMT,ACCUM_AMOUNT,DEAL_NET_RATIO,DEAL_AMOUNT_RATIO,TURNOVERRATE,FREE_MARKET_CAP,EXPLANATION,D1_DATE,D1_CLOSE,D2_DATE,D2_CLOSE&filter=(TRADE_DATE%3E%27${today}%27)`;
+
+                window[cbName] = function(data) {
+                    resolve(data);
+                    delete window[cbName];
+                    try { document.body.removeChild(script); } catch(e) {}
+                };
+                window['cb_' + cbName] = window[cbName];
+
+                script.src = url;
+                script.onerror = () => {
+                    resolve(null);
+                    delete window[cbName];
+                    try { document.body.removeChild(script); } catch(e) {}
+                };
+                document.body.appendChild(script);
+            });
+        }
+
+        // 涨停池 - 东方财富
+        function fetchZTPool() {
+            return new Promise((resolve) => {
+                const cbName = 'zt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+                const script = document.createElement('script');
+                const date = getTodayCompact();
+                const url = `https://push2ex.eastmoney.com/getTopicZTPool?cb=${cbName}&ut=7eea3edcaed734bea9cbfc24409edc8c&dpt=wz.ztzt&Ession=1&date=${date}&sort=fbt%3Aasc&page=1&pagesize=50`;
+
+                window[cbName] = function(data) {
+                    resolve(data);
+                    delete window[cbName];
+                    try { document.body.removeChild(script); } catch(e) {}
+                };
+
+                script.src = url;
+                script.onerror = () => {
+                    resolve(null);
+                    delete window[cbName];
+                    try { document.body.removeChild(script); } catch(e) {}
+                };
+                document.body.appendChild(script);
+            });
+        }
+
+        // 渲染龙虎榜
+        function renderLHB(data) {
+            const el = document.getElementById('lhbData');
+            if (!data || !data.result || !data.result.data || data.result.data.length === 0) {
+                el.innerHTML = '<div style="color:#888;text-align:center;padding:20px">今日暂无龙虎榜数据（盘后发布）</div>';
+                return;
+            }
+            const items = data.result.data;
+            let rows = '';
+            items.forEach(item => {
+                const cc = changeClass(item.CHANGE_RATE || 0);
+                const netBuy = (item.NET_BUY_AMT || 0) / 10000; // 万元→亿
+                const netColor = netBuy > 0 ? 'up' : netBuy < 0 ? 'down' : 'flat';
+                const reason = item.EXPLANATION || item.EXPLAIN || '';
+                const reasonShort = reason.length > 10 ? reason.substring(0, 10) + '…' : reason;
+                rows += `
+                    <tr>
+                        <td>${item.SECURITY_NAME_ABBR || '--'}<br><small style="color:#888">${item.SECURITY_CODE || ''}</small></td>
+                        <td class="${cc}">${signStr(item.CHANGE_RATE || 0)}${(item.CHANGE_RATE || 0).toFixed(2)}%</td>
+                        <td class="${netColor}" style="font-weight:bold">${netBuy > 0 ? '+' : ''}${netBuy.toFixed(2)}亿</td>
+                        <td><span class="reason-tag">${reasonShort || '--'}</span></td>
+                    </tr>`;
+            });
+            el.innerHTML = `
+                <table class="review-table">
+                    <thead><tr><th>股票</th><th>涨跌幅</th><th>净买入</th><th>原因</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>`;
+        }
+
+        // 渲染涨停池
+        function renderZT(data) {
+            const el = document.getElementById('ztData');
+            if (!data || !data.data || !data.data.pool || data.data.pool.length === 0) {
+                el.innerHTML = '<div style="color:#888;text-align:center;padding:20px">今日暂无涨停数据</div>';
+                return;
+            }
+            const items = data.data.pool;
+            let html = '<div class="zt-grid">';
+            items.forEach(item => {
+                const fbt = item.fbt ? new Date(item.fbt * 1000) : null;
+                const fbtStr = fbt ? String(fbt.getHours()).padStart(2,'0') + ':' + String(fbt.getMinutes()).padStart(2,'0') : '--';
+                const zbc = item.zbc || 0; // 炸板次数
+                html += `
+                    <div class="zt-item">
+                        <div class="zt-name">${item.n || '--'}</div>
+                        <div class="zt-code">${item.c || ''}</div>
+                        <div class="zt-detail">
+                            封板 <span class="zt-time">${fbtStr}</span> · 连板${item.lbc || 1}板
+                            ${zbc > 0 ? ' · 炸' + zbc + '次' : ''}
+                        </div>
+                    </div>`;
+            });
+            html += '</div>';
+            el.innerHTML = html;
+        }
+
+        let lastReviewUpdate = 0;
+        const REVIEW_REFRESH_INTERVAL = 300000; // 5分钟刷新复盘数据
+
+        async function loadReviewData() {
+            const now = Date.now();
+            if (now - lastReviewUpdate < REVIEW_REFRESH_INTERVAL) return;
+            lastReviewUpdate = now;
+
+            const [lhbData, ztData] = await Promise.all([
+                fetchLHB(),
+                fetchZTPool()
+            ]);
+            renderLHB(lhbData);
+            renderZT(ztData);
+        }
+
         // ============ 主循环 ============
         async function loadData() {
             updateTime();
             try {
                 await loadStockData();
                 await loadSectorData();
+                await loadReviewData();
             } catch(e) {
                 console.error('加载失败:', e);
             }
@@ -638,6 +809,10 @@
         setInterval(() => {
             loadSectorData();
         }, 15000);
+        // 复盘数据 5分钟刷新
+        setInterval(() => {
+            loadReviewData();
+        }, 60000);
         // 时钟 1秒
         setInterval(updateTime, 1000);
     </script>
